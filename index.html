@@ -559,84 +559,95 @@
       document.getElementById('submit-btn').addEventListener('click', submitAllSchedules);
     }
     
-    // ========================================
-    // 一括登録
-    // ========================================
-    async function submitAllSchedules() {
-      const dates = Object.keys(scheduleData);
-      
-      if (dates.length === 0) {
-        showMessage('予定が選択されていません', 'error');
-        return;
-      }
-      
-      // 午前・午後両方が選択されているかチェック
-      const incompleteDates = dates.filter(date => {
-        return !scheduleData[date].morning || !scheduleData[date].afternoon;
-      });
-      
-      if (incompleteDates.length > 0) {
-        showMessage('午前・午後の両方を選択してください', 'error');
-        return;
-      }
-      
-      const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = '登録中...';
-      
-      try {
-        // データを配列に変換
-        const schedules = dates.map(date => ({
-          date: date,
-          morning: scheduleData[date].morning,
-          afternoon: scheduleData[date].afternoon
-        }));
-        
-        const response = await fetch(GAS_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain',
-          },
-          body: JSON.stringify({
-            userId: userId,
-            userName: userName,
-            schedules: schedules,
-            bulk: true
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error('HTTP Error: ' + response.status);
-        }
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          showMessage(`${schedules.length}日分の予定を登録しました！`, 'success');
-          
-          // 既存予定を更新
-          schedules.forEach(schedule => {
-            existingSchedules[schedule.date] = {
-              morning: schedule.morning,
-              afternoon: schedule.afternoon
-            };
-          });
-          
-          setTimeout(() => {
-            liff.closeWindow();
-          }, 1500);
-        } else {
-          throw new Error(result.error || '登録に失敗しました');
-        }
-        
-      } catch (error) {
-        console.error('登録エラー:', error);
-        showMessage('登録に失敗しました: ' + error.message, 'error');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '一括登録';
-      }
-    }
+		// ========================================
+		// 一括登録
+		// ========================================
+		async function submitAllSchedules() {
+		  const dates = Object.keys(scheduleData);
+		  
+		  if (dates.length === 0) {
+		    showMessage('予定が選択されていません', 'error');
+		    return;
+		  }
+		  
+		  // 午前・午後両方が選択されているかチェック
+		  const incompleteDates = dates.filter(date => {
+		    return !scheduleData[date].morning || !scheduleData[date].afternoon;
+		  });
+		  
+		  if (incompleteDates.length > 0) {
+		    showMessage('午前・午後の両方を選択してください', 'error');
+		    return;
+		  }
+		  
+		  const submitBtn = document.getElementById('submit-btn');
+		  submitBtn.disabled = true;
+		  submitBtn.textContent = '登録中...';
+		  
+		  try {
+		    // データを配列に変換
+		    const schedules = dates.map(date => ({
+		      date: date,
+		      morning: scheduleData[date].morning,
+		      afternoon: scheduleData[date].afternoon
+		    }));
+		    
+		    const requestData = {
+		      userId: userId,
+		      userName: userName,
+		      schedules: schedules,
+		      bulk: true
+		    };
+		    
+		    console.log('送信データ:', requestData);
+		    
+		    const response = await fetch(GAS_ENDPOINT, {
+		      method: 'POST',
+		      headers: {
+		        'Content-Type': 'text/plain',
+		      },
+		      body: JSON.stringify(requestData)
+		    });
+		    
+		    console.log('レスポンスステータス:', response.status);
+		    
+		    if (!response.ok) {
+		      throw new Error('HTTP Error: ' + response.status);
+		    }
+		    
+		    const responseText = await response.text();
+		    console.log('レスポンス内容:', responseText);
+		    
+		    const result = JSON.parse(responseText);
+		    console.log('JSONパース結果:', result);
+		    
+		    if (result.success) {
+		      showMessage(`${schedules.length}日分の予定を登録しました！`, 'success');
+		      
+		      // 既存予定を更新
+		      schedules.forEach(schedule => {
+		        existingSchedules[schedule.date] = {
+		          morning: schedule.morning,
+		          afternoon: schedule.afternoon
+		        };
+		      });
+		      
+		      setTimeout(() => {
+		        liff.closeWindow();
+		      }, 1500);
+		    } else {
+		      throw new Error(result.error || '登録に失敗しました');
+		    }
+		    
+		  } catch (error) {
+		    console.error('登録エラー:', error);
+		    showMessage('登録に失敗しました: ' + error.message, 'error');
+		  } finally {
+		    submitBtn.disabled = false;
+		    submitBtn.textContent = '一括登録';
+		  }
+		}
+
     
     // ========================================
     // 初期化実行
