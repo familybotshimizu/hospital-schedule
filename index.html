@@ -270,6 +270,7 @@
     }
     
     // 予定登録
+    // 予定登録
     async function submitSchedule() {
       const date = document.getElementById('target-date').value;
       
@@ -287,25 +288,43 @@
       submitBtn.disabled = true;
       submitBtn.textContent = '登録中...';
       
+      const requestData = {
+        userId: userId,
+        userName: userName,
+        date: date,
+        morning: selectedMorning,
+        afternoon: selectedAfternoon
+      };
+      
+      showDebug('送信データ: ' + JSON.stringify(requestData));
+      showDebug('送信先: ' + GAS_ENDPOINT);
+      
       try {
-        const response = await fetch(GAS_ENDPOINT + '?action=saveSchedule', {
+        showDebug('fetch開始...');
+        
+        const response = await fetch(GAS_ENDPOINT, {  // ← ?action=saveSchedule を削除
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'text/plain',  // ← application/json から変更
           },
-          body: JSON.stringify({
-            userId: userId,
-            userName: userName,
-            date: date,
-            morning: selectedMorning,
-            afternoon: selectedAfternoon
-          })
+          body: JSON.stringify(requestData)
         });
         
-        const result = await response.json();
+        showDebug('レスポンス受信。Status: ' + response.status);
+        
+        if (!response.ok) {
+          throw new Error('HTTP Error: ' + response.status);
+        }
+        
+        const responseText = await response.text();
+        showDebug('レスポンス内容: ' + responseText);
+        
+        const result = JSON.parse(responseText);
+        showDebug('JSONパース成功: ' + JSON.stringify(result));
         
         if (result.success) {
           showMessage('登録しました！', 'success');
+          showDebug('登録成功！');
           setTimeout(() => {
             liff.closeWindow();
           }, 1500);
@@ -315,11 +334,13 @@
         
       } catch (error) {
         console.error('登録エラー:', error);
-        showMessage('登録に失敗しました', 'error');
+        showMessage('登録に失敗しました: ' + error.message, 'error');
+        showDebug('ERROR: ' + error.toString());
         submitBtn.disabled = false;
         submitBtn.textContent = '登録する';
       }
     }
+
     
     // メッセージ表示
     function showMessage(text, type) {
