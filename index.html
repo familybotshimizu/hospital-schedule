@@ -134,6 +134,8 @@
       margin-bottom: 16px;
       text-align: center;
       display: none;
+      font-size: 14px;
+      word-break: break-all;
     }
     
     .message.success {
@@ -152,6 +154,16 @@
       text-align: center;
       padding: 40px;
       color: #999;
+    }
+    
+    .debug-info {
+      margin-top: 20px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+      display: none;
     }
   </style>
 </head>
@@ -188,33 +200,77 @@
       </div>
       
       <button class="submit-btn" id="submit-btn">登録する</button>
+      
+      <div id="debug-info" class="debug-info"></div>
     </div>
   </div>
 
   <script>
+    // ========================================
     // 設定
-    const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxeZ1O7nVYkIPy5QiyqKxwFlYIxtjUmJImPFQt5vXT4jALFx4lcUtmFrsTL986vgRsJ/exec'; // GASのウェブアプリURLに置き換え
-    const LIFF_ID = '2009744062-9ppCT2Sl'; // LIFFIDに置き換え
+    // ========================================
+    const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxeZ1O7nVYkIPy5QiyqKxwFlYIxtjUmJImPFQt5vXT4jALFx4lcUtmFrsTL986vgRsJ/exec';
+    const LIFF_ID = '2009744062-9ppCT2Sl';
     
     let selectedMorning = null;
     let selectedAfternoon = null;
     let userId = null;
     let userName = null;
     
+    // ========================================
+    // ユーティリティ関数
+    // ========================================
+    
+    // デバッグ情報表示
+    function showDebug(info) {
+      const debugEl = document.getElementById('debug-info');
+      if (debugEl) {
+        debugEl.style.display = 'block';
+        debugEl.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + info + '</div>';
+      }
+      console.log('DEBUG:', info);
+    }
+    
+    // メッセージ表示
+    function showMessage(text, type) {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          messageEl.style.display = 'none';
+        }, 3000);
+      }
+    }
+    
+    // ========================================
     // LIFF初期化
+    // ========================================
     async function initializeLiff() {
       try {
+        showDebug('LIFF初期化開始...');
+        showDebug('LIFF_ID: ' + LIFF_ID);
+        
         await liff.init({ liffId: LIFF_ID });
+        showDebug('LIFF初期化成功');
         
         if (!liff.isLoggedIn()) {
+          showDebug('未ログイン。ログイン画面へ');
           liff.login();
           return;
         }
+        
+        showDebug('ログイン済み。プロフィール取得中...');
         
         // プロフィール取得
         const profile = await liff.getProfile();
         userId = profile.userId;
         userName = profile.displayName;
+        
+        showDebug('UserID: ' + userId);
+        showDebug('UserName: ' + userName);
+        showDebug('GAS_ENDPOINT: ' + GAS_ENDPOINT);
         
         // UI表示
         document.getElementById('loading').style.display = 'none';
@@ -230,11 +286,14 @@
         
       } catch (error) {
         console.error('LIFF初期化エラー:', error);
-        showMessage('初期化に失敗しました', 'error');
+        showMessage('初期化に失敗しました: ' + error.message, 'error');
+        showDebug('ERROR: ' + error.toString());
       }
     }
     
+    // ========================================
     // イベントリスナー設定
+    // ========================================
     function setupEventListeners() {
       // 可否ボタン
       document.querySelectorAll('.availability-btn').forEach(btn => {
@@ -262,6 +321,8 @@
           } else {
             selectedAfternoon = value;
           }
+          
+          showDebug('選択: ' + period + ' = ' + value);
         });
       });
       
@@ -269,8 +330,9 @@
       document.getElementById('submit-btn').addEventListener('click', submitSchedule);
     }
     
+    // ========================================
     // 予定登録
-    // 予定登録
+    // ========================================
     async function submitSchedule() {
       const date = document.getElementById('target-date').value;
       
@@ -302,10 +364,10 @@
       try {
         showDebug('fetch開始...');
         
-        const response = await fetch(GAS_ENDPOINT, {  // ← ?action=saveSchedule を削除
+        const response = await fetch(GAS_ENDPOINT, {
           method: 'POST',
           headers: {
-            'Content-Type': 'text/plain',  // ← application/json から変更
+            'Content-Type': 'text/plain',
           },
           body: JSON.stringify(requestData)
         });
@@ -340,22 +402,10 @@
         submitBtn.textContent = '登録する';
       }
     }
-
     
-    // メッセージ表示
-    function showMessage(text, type) {
-      const messageEl = document.getElementById('message');
-      messageEl.textContent = text;
-      messageEl.className = `message ${type}`;
-      
-      if (type === 'error') {
-        setTimeout(() => {
-          messageEl.style.display = 'none';
-        }, 3000);
-      }
-    }
-    
+    // ========================================
     // 初期化実行
+    // ========================================
     initializeLiff();
   </script>
 </body>
