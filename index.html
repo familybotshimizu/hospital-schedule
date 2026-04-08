@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予定入力</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    
+    .date-input {
+      margin-bottom: 24px;
+    }
+    
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    
+    input[type="date"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      transition: border-color 0.3s;
+    }
+    
+    input[type="date"]:focus {
+      outline: none;
+      border-color: #06c755;
+    }
+    
+    .time-period {
+      margin-bottom: 32px;
+    }
+    
+    .time-period h3 {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .availability-btn {
+      flex: 1;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .availability-btn.active-ok {
+      background: #06c755;
+      color: white;
+      border-color: #06c755;
+    }
+    
+    .availability-btn.active-maybe {
+      background: #ffb74d;
+      color: white;
+      border-color: #ffb74d;
+    }
+    
+    .availability-btn.active-ng {
+      background: #ef5350;
+      color: white;
+      border-color: #ef5350;
+    }
+    
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      background: #06c755;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: background 0.3s;
+    }
+    
+    .submit-btn:hover {
+      background: #05b34a;
+    }
+    
+    .submit-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+      display: none;
+    }
+    
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      display: block;
+    }
+    
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+      display: block;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading" class="loading">読み込み中...</div>
+    
+    <div id="app" style="display: none;">
+      <h1>予定入力</h1>
+      
+      <div id="message" class="message"></div>
+      
+      <div class="date-input">
+        <label for="target-date">日付を選択</label>
+        <input type="date" id="target-date" min="">
+      </div>
+      
+      <div class="time-period">
+        <h3>午前の予定</h3>
+        <div class="button-group">
+          <button class="availability-btn" data-period="morning" data-value="○">○</button>
+          <button class="availability-btn" data-period="morning" data-value="△">△</button>
+          <button class="availability-btn" data-period="morning" data-value="×">×</button>
+        </div>
+      </div>
+      
+      <div class="time-period">
+        <h3>午後の予定</h3>
+        <div class="button-group">
+          <button class="availability-btn" data-period="afternoon" data-value="○">○</button>
+          <button class="availability-btn" data-period="afternoon" data-value="△">△</button>
+          <button class="availability-btn" data-period="afternoon" data-value="×">×</button>
+        </div>
+      </div>
+      
+      <button class="submit-btn" id="submit-btn">登録する</button>
+    </div>
+  </div>
+
+  <script>
+    // 設定
+    const GAS_ENDPOINT = 'YOUR_GAS_WEB_APP_URL'; // GASのウェブアプリURLに置き換え
+    const LIFF_ID = 'YOUR_LIFF_ID'; // LIFFIDに置き換え
+    
+    let selectedMorning = null;
+    let selectedAfternoon = null;
+    let userId = null;
+    let userName = null;
+    
+    // LIFF初期化
+    async function initializeLiff() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+        
+        // プロフィール取得
+        const profile = await liff.getProfile();
+        userId = profile.userId;
+        userName = profile.displayName;
+        
+        // UI表示
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        
+        // 日付の最小値を今日に設定
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('target-date').min = today;
+        document.getElementById('target-date').value = today;
+        
+        // イベントリスナー設定
+        setupEventListeners();
+        
+      } catch (error) {
+        console.error('LIFF初期化エラー:', error);
+        showMessage('初期化に失敗しました', 'error');
+      }
+    }
+    
+    // イベントリスナー設定
+    function setupEventListeners() {
+      // 可否ボタン
+      document.querySelectorAll('.availability-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const period = this.dataset.period;
+          const value = this.dataset.value;
+          
+          // 同じperiodの他のボタンの選択解除
+          document.querySelectorAll(`[data-period="${period}"]`).forEach(b => {
+            b.classList.remove('active-ok', 'active-maybe', 'active-ng');
+          });
+          
+          // 選択状態を設定
+          if (value === '○') {
+            this.classList.add('active-ok');
+          } else if (value === '△') {
+            this.classList.add('active-maybe');
+          } else {
+            this.classList.add('active-ng');
+          }
+          
+          // 値を保存
+          if (period === 'morning') {
+            selectedMorning = value;
+          } else {
+            selectedAfternoon = value;
+          }
+        });
+      });
+      
+      // 登録ボタン
+      document.getElementById('submit-btn').addEventListener('click', submitSchedule);
+    }
+    
+    // 予定登録
+    async function submitSchedule() {
+      const date = document.getElementById('target-date').value;
+      
+      if (!date) {
+        showMessage('日付を選択してください', 'error');
+        return;
+      }
+      
+      if (!selectedMorning || !selectedAfternoon) {
+        showMessage('午前・午後の両方を選択してください', 'error');
+        return;
+      }
+      
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '登録中...';
+      
+      try {
+        const response = await fetch(GAS_ENDPOINT + '?action=saveSchedule', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            userName: userName,
+            date: date,
+            morning: selectedMorning,
+            afternoon: selectedAfternoon
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          showMessage('登録しました！', 'success');
+          setTimeout(() => {
+            liff.closeWindow();
+          }, 1500);
+        } else {
+          throw new Error(result.error || '登録に失敗しました');
+        }
+        
+      } catch (error) {
+        console.error('登録エラー:', error);
+        showMessage('登録に失敗しました', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '登録する';
+      }
+    }
+    
+    // メッセージ表示
+    function showMessage(text, type) {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      
+      if (type === 'error') {
+        setTimeout(() => {
+          messageEl.style.display = 'none';
+        }, 3000);
+      }
+    }
+    
+    // 初期化実行
+    initializeLiff();
+  </script>
+</body>
+</html>
