@@ -16,6 +16,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #f5f5f5;
       padding: 20px;
+      padding-bottom: 100px;
     }
     
     .container {
@@ -30,102 +31,162 @@
     h1 {
       font-size: 24px;
       color: #333;
-      margin-bottom: 24px;
+      margin-bottom: 8px;
       text-align: center;
     }
     
-    .date-input {
+    .subtitle {
+      text-align: center;
+      color: #999;
+      font-size: 14px;
       margin-bottom: 24px;
     }
     
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      color: #555;
-      margin-bottom: 8px;
+    .month-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      align-items: center;
     }
     
-    input[type="date"] {
-      width: 100%;
+    .month-selector select {
+      flex: 1;
       padding: 12px;
       font-size: 16px;
       border: 2px solid #e0e0e0;
       border-radius: 8px;
-      transition: border-color 0.3s;
+      background: white;
     }
     
-    input[type="date"]:focus {
-      outline: none;
-      border-color: #06c755;
+    .calendar-container {
+      margin-bottom: 24px;
     }
     
-    .time-period {
-      margin-bottom: 32px;
+    .calendar-header {
+      display: grid;
+      grid-template-columns: 80px repeat(2, 1fr);
+      gap: 8px;
+      padding: 12px 8px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      color: #666;
     }
     
-    .time-period h3 {
-      font-size: 16px;
+    .calendar-row {
+      display: grid;
+      grid-template-columns: 80px repeat(2, 1fr);
+      gap: 8px;
+      padding: 12px 8px;
+      border-bottom: 1px solid #f0f0f0;
+      align-items: center;
+    }
+    
+    .calendar-row:last-child {
+      border-bottom: none;
+    }
+    
+    .date-label {
+      font-size: 14px;
       color: #333;
-      margin-bottom: 12px;
+      font-weight: 500;
     }
     
-    .button-group {
+    .date-label .weekday {
+      font-size: 12px;
+      color: #999;
+      margin-left: 4px;
+    }
+    
+    .date-label .weekday.sunday {
+      color: #ef5350;
+    }
+    
+    .date-label .weekday.saturday {
+      color: #42a5f5;
+    }
+    
+    .period-buttons {
       display: flex;
-      gap: 12px;
+      gap: 4px;
     }
     
-    .availability-btn {
+    .period-btn {
       flex: 1;
-      padding: 16px;
-      font-size: 18px;
+      padding: 8px;
+      font-size: 14px;
       font-weight: bold;
       border: 2px solid #e0e0e0;
-      border-radius: 8px;
+      border-radius: 6px;
       background: white;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s;
     }
     
-    .availability-btn.active-ok {
+    .period-btn.active-ok {
       background: #06c755;
       color: white;
       border-color: #06c755;
     }
     
-    .availability-btn.active-maybe {
+    .period-btn.active-maybe {
       background: #ffb74d;
       color: white;
       border-color: #ffb74d;
     }
     
-    .availability-btn.active-ng {
+    .period-btn.active-ng {
       background: #ef5350;
       color: white;
       border-color: #ef5350;
     }
     
-    .submit-btn {
-      width: 100%;
+    .action-buttons {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 16px 20px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn {
+      flex: 1;
       padding: 16px;
       font-size: 18px;
       font-weight: bold;
-      color: white;
-      background: #06c755;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      margin-top: 24px;
-      transition: background 0.3s;
+      transition: all 0.3s;
     }
     
-    .submit-btn:hover {
+    .btn-primary {
+      background: #06c755;
+      color: white;
+    }
+    
+    .btn-primary:hover {
       background: #05b34a;
     }
     
-    .submit-btn:disabled {
+    .btn-primary:disabled {
       background: #ccc;
       cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
     }
     
     .message {
@@ -135,7 +196,6 @@
       text-align: center;
       display: none;
       font-size: 14px;
-      word-break: break-all;
     }
     
     .message.success {
@@ -150,20 +210,52 @@
       display: block;
     }
     
+    .message.info {
+      background: #e3f2fd;
+      color: #1976d2;
+      display: block;
+    }
+    
     .loading {
       text-align: center;
       padding: 40px;
       color: #999;
     }
     
-    .debug-info {
-      margin-top: 20px;
-      padding: 12px;
-      background: #f5f5f5;
-      border-radius: 8px;
+    .legend {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 16px;
       font-size: 12px;
-      font-family: monospace;
-      display: none;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 2px solid #e0e0e0;
+    }
+    
+    .legend-color.ok {
+      background: #06c755;
+      border-color: #06c755;
+    }
+    
+    .legend-color.maybe {
+      background: #ffb74d;
+      border-color: #ffb74d;
+    }
+    
+    .legend-color.ng {
+      background: #ef5350;
+      border-color: #ef5350;
     }
   </style>
 </head>
@@ -173,35 +265,46 @@
     
     <div id="app" style="display: none;">
       <h1>予定入力</h1>
+      <div class="subtitle" id="user-name"></div>
       
       <div id="message" class="message"></div>
       
-      <div class="date-input">
-        <label for="target-date">日付を選択</label>
-        <input type="date" id="target-date" min="">
-      </div>
-      
-      <div class="time-period">
-        <h3>午前の予定</h3>
-        <div class="button-group">
-          <button class="availability-btn" data-period="morning" data-value="○">○</button>
-          <button class="availability-btn" data-period="morning" data-value="△">△</button>
-          <button class="availability-btn" data-period="morning" data-value="×">×</button>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color ok"></div>
+          <span>○ 対応できる</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color maybe"></div>
+          <span>△ できれば避けたい</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color ng"></div>
+          <span>× 対応できない</span>
         </div>
       </div>
       
-      <div class="time-period">
-        <h3>午後の予定</h3>
-        <div class="button-group">
-          <button class="availability-btn" data-period="afternoon" data-value="○">○</button>
-          <button class="availability-btn" data-period="afternoon" data-value="△">△</button>
-          <button class="availability-btn" data-period="afternoon" data-value="×">×</button>
+      <div class="month-selector">
+        <select id="month-select">
+          <!-- JavaScriptで動的生成 -->
+        </select>
+      </div>
+      
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <div>日付</div>
+          <div style="text-align: center;">午前</div>
+          <div style="text-align: center;">午後</div>
+        </div>
+        <div id="calendar-body">
+          <!-- JavaScriptで動的生成 -->
         </div>
       </div>
       
-      <button class="submit-btn" id="submit-btn">登録する</button>
-      
-      <div id="debug-info" class="debug-info"></div>
+      <div class="action-buttons">
+        <button class="btn btn-secondary" id="clear-btn">クリア</button>
+        <button class="btn btn-primary" id="submit-btn">一括登録</button>
+      </div>
     </div>
   </div>
 
@@ -212,24 +315,14 @@
     const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxeZ1O7nVYkIPy5QiyqKxwFlYIxtjUmJImPFQt5vXT4jALFx4lcUtmFrsTL986vgRsJ/exec';
     const LIFF_ID = '2009744062-9ppCT2Sl';
     
-    let selectedMorning = null;
-    let selectedAfternoon = null;
     let userId = null;
     let userName = null;
+    let scheduleData = {}; // { 'YYYY-MM-DD': { morning: '○', afternoon: '×' } }
+    let existingSchedules = {}; // GASから取得した既存予定
     
     // ========================================
     // ユーティリティ関数
     // ========================================
-    
-    // デバッグ情報表示
-    function showDebug(info) {
-      const debugEl = document.getElementById('debug-info');
-      if (debugEl) {
-        debugEl.style.display = 'block';
-        debugEl.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + info + '</div>';
-      }
-      console.log('DEBUG:', info);
-    }
     
     // メッセージ表示
     function showMessage(text, type) {
@@ -244,104 +337,245 @@
       }
     }
     
+    // 曜日取得
+    function getWeekday(date) {
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      return weekdays[date.getDay()];
+    }
+    
+    // 曜日クラス取得
+    function getWeekdayClass(date) {
+      const day = date.getDay();
+      if (day === 0) return 'sunday';
+      if (day === 6) return 'saturday';
+      return '';
+    }
+    
     // ========================================
     // LIFF初期化
     // ========================================
     async function initializeLiff() {
       try {
-        showDebug('LIFF初期化開始...');
-        showDebug('LIFF_ID: ' + LIFF_ID);
-        
         await liff.init({ liffId: LIFF_ID });
-        showDebug('LIFF初期化成功');
         
         if (!liff.isLoggedIn()) {
-          showDebug('未ログイン。ログイン画面へ');
           liff.login();
           return;
         }
-        
-        showDebug('ログイン済み。プロフィール取得中...');
         
         // プロフィール取得
         const profile = await liff.getProfile();
         userId = profile.userId;
         userName = profile.displayName;
         
-        showDebug('UserID: ' + userId);
-        showDebug('UserName: ' + userName);
-        showDebug('GAS_ENDPOINT: ' + GAS_ENDPOINT);
+        document.getElementById('user-name').textContent = userName + ' さん';
+        
+        // 既存予定を取得
+        await loadExistingSchedules();
         
         // UI表示
         document.getElementById('loading').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         
-        // 日付の最小値を今日に設定
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('target-date').min = today;
-        document.getElementById('target-date').value = today;
+        // 月選択肢を生成
+        generateMonthOptions();
+        
+        // カレンダー生成
+        generateCalendar();
         
         // イベントリスナー設定
         setupEventListeners();
         
       } catch (error) {
         console.error('LIFF初期化エラー:', error);
-        showMessage('初期化に失敗しました: ' + error.message, 'error');
-        showDebug('ERROR: ' + error.toString());
+        showMessage('初期化に失敗しました', 'error');
       }
+    }
+    
+    // ========================================
+    // 既存予定の読み込み
+    // ========================================
+    async function loadExistingSchedules() {
+      try {
+        const response = await fetch(GAS_ENDPOINT + '?action=getSchedule&userId=' + userId);
+        const result = await response.json();
+        
+        if (result.success && result.schedules) {
+          result.schedules.forEach(schedule => {
+            existingSchedules[schedule.date] = {
+              morning: schedule.morning,
+              afternoon: schedule.afternoon
+            };
+            // 現在の選択状態にも反映
+            scheduleData[schedule.date] = {
+              morning: schedule.morning,
+              afternoon: schedule.afternoon
+            };
+          });
+          
+          console.log('既存予定を読み込みました:', existingSchedules);
+        }
+      } catch (error) {
+        console.error('既存予定の読み込みエラー:', error);
+        // エラーでも続行
+      }
+    }
+    
+    // ========================================
+    // 月選択肢生成
+    // ========================================
+    function generateMonthOptions() {
+      const select = document.getElementById('month-select');
+      const today = new Date();
+      
+      // 今月から6ヶ月分
+      for (let i = 0; i < 6; i++) {
+        const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
+        const option = document.createElement('option');
+        option.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        option.textContent = `${date.getFullYear()}年${date.getMonth() + 1}月`;
+        if (i === 0) option.selected = true;
+        select.appendChild(option);
+      }
+    }
+    
+    // ========================================
+    // カレンダー生成
+    // ========================================
+    function generateCalendar() {
+      const monthSelect = document.getElementById('month-select');
+      const [year, month] = monthSelect.value.split('-').map(Number);
+      
+      const calendarBody = document.getElementById('calendar-body');
+      calendarBody.innerHTML = '';
+      
+      // 月の日数を取得
+      const daysInMonth = new Date(year, month, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        const row = document.createElement('div');
+        row.className = 'calendar-row';
+        
+        // 日付ラベル
+        const dateLabel = document.createElement('div');
+        dateLabel.className = 'date-label';
+        const weekday = getWeekday(date);
+        const weekdayClass = getWeekdayClass(date);
+        dateLabel.innerHTML = `${month}/${day} <span class="weekday ${weekdayClass}">(${weekday})</span>`;
+        row.appendChild(dateLabel);
+        
+        // 午前ボタン
+        const morningButtons = createPeriodButtons(dateStr, 'morning');
+        row.appendChild(morningButtons);
+        
+        // 午後ボタン
+        const afternoonButtons = createPeriodButtons(dateStr, 'afternoon');
+        row.appendChild(afternoonButtons);
+        
+        calendarBody.appendChild(row);
+      }
+    }
+    
+    // ========================================
+    // 期間ボタン作成
+    // ========================================
+    function createPeriodButtons(dateStr, period) {
+      const container = document.createElement('div');
+      container.className = 'period-buttons';
+      
+      const values = ['○', '△', '×'];
+      
+      values.forEach(value => {
+        const btn = document.createElement('button');
+        btn.className = 'period-btn';
+        btn.textContent = value;
+        btn.dataset.date = dateStr;
+        btn.dataset.period = period;
+        btn.dataset.value = value;
+        
+        // 既存の選択状態を反映
+        if (scheduleData[dateStr] && scheduleData[dateStr][period] === value) {
+          if (value === '○') btn.classList.add('active-ok');
+          else if (value === '△') btn.classList.add('active-maybe');
+          else btn.classList.add('active-ng');
+        }
+        
+        btn.addEventListener('click', function() {
+          handlePeriodClick(dateStr, period, value, this);
+        });
+        
+        container.appendChild(btn);
+      });
+      
+      return container;
+    }
+    
+    // ========================================
+    // 期間ボタンクリック処理
+    // ========================================
+    function handlePeriodClick(dateStr, period, value, btn) {
+      // 同じperiodの他のボタンの選択解除
+      const periodButtons = document.querySelectorAll(`[data-date="${dateStr}"][data-period="${period}"]`);
+      periodButtons.forEach(b => {
+        b.classList.remove('active-ok', 'active-maybe', 'active-ng');
+      });
+      
+      // 選択状態を設定
+      if (value === '○') {
+        btn.classList.add('active-ok');
+      } else if (value === '△') {
+        btn.classList.add('active-maybe');
+      } else {
+        btn.classList.add('active-ng');
+      }
+      
+      // データ保存
+      if (!scheduleData[dateStr]) {
+        scheduleData[dateStr] = {};
+      }
+      scheduleData[dateStr][period] = value;
     }
     
     // ========================================
     // イベントリスナー設定
     // ========================================
     function setupEventListeners() {
-      // 可否ボタン
-      document.querySelectorAll('.availability-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const period = this.dataset.period;
-          const value = this.dataset.value;
-          
-          // 同じperiodの他のボタンの選択解除
-          document.querySelectorAll(`[data-period="${period}"]`).forEach(b => {
-            b.classList.remove('active-ok', 'active-maybe', 'active-ng');
-          });
-          
-          // 選択状態を設定
-          if (value === '○') {
-            this.classList.add('active-ok');
-          } else if (value === '△') {
-            this.classList.add('active-maybe');
-          } else {
-            this.classList.add('active-ng');
-          }
-          
-          // 値を保存
-          if (period === 'morning') {
-            selectedMorning = value;
-          } else {
-            selectedAfternoon = value;
-          }
-          
-          showDebug('選択: ' + period + ' = ' + value);
-        });
+      // 月変更
+      document.getElementById('month-select').addEventListener('change', generateCalendar);
+      
+      // クリアボタン
+      document.getElementById('clear-btn').addEventListener('click', () => {
+        if (confirm('選択した予定をすべてクリアしますか？')) {
+          scheduleData = {};
+          generateCalendar();
+          showMessage('クリアしました', 'info');
+        }
       });
       
       // 登録ボタン
-      document.getElementById('submit-btn').addEventListener('click', submitSchedule);
+      document.getElementById('submit-btn').addEventListener('click', submitAllSchedules);
     }
     
     // ========================================
-    // 予定登録
+    // 一括登録
     // ========================================
-    async function submitSchedule() {
-      const date = document.getElementById('target-date').value;
+    async function submitAllSchedules() {
+      const dates = Object.keys(scheduleData);
       
-      if (!date) {
-        showMessage('日付を選択してください', 'error');
+      if (dates.length === 0) {
+        showMessage('予定が選択されていません', 'error');
         return;
       }
       
-      if (!selectedMorning || !selectedAfternoon) {
+      // 午前・午後両方が選択されているかチェック
+      const incompleteDates = dates.filter(date => {
+        return !scheduleData[date].morning || !scheduleData[date].afternoon;
+      });
+      
+      if (incompleteDates.length > 0) {
         showMessage('午前・午後の両方を選択してください', 'error');
         return;
       }
@@ -350,43 +584,44 @@
       submitBtn.disabled = true;
       submitBtn.textContent = '登録中...';
       
-      const requestData = {
-        userId: userId,
-        userName: userName,
-        date: date,
-        morning: selectedMorning,
-        afternoon: selectedAfternoon
-      };
-      
-      showDebug('送信データ: ' + JSON.stringify(requestData));
-      showDebug('送信先: ' + GAS_ENDPOINT);
-      
       try {
-        showDebug('fetch開始...');
+        // データを配列に変換
+        const schedules = dates.map(date => ({
+          date: date,
+          morning: scheduleData[date].morning,
+          afternoon: scheduleData[date].afternoon
+        }));
         
         const response = await fetch(GAS_ENDPOINT, {
           method: 'POST',
           headers: {
             'Content-Type': 'text/plain',
           },
-          body: JSON.stringify(requestData)
+          body: JSON.stringify({
+            userId: userId,
+            userName: userName,
+            schedules: schedules,
+            bulk: true
+          })
         });
-        
-        showDebug('レスポンス受信。Status: ' + response.status);
         
         if (!response.ok) {
           throw new Error('HTTP Error: ' + response.status);
         }
         
-        const responseText = await response.text();
-        showDebug('レスポンス内容: ' + responseText);
-        
-        const result = JSON.parse(responseText);
-        showDebug('JSONパース成功: ' + JSON.stringify(result));
+        const result = await response.json();
         
         if (result.success) {
-          showMessage('登録しました！', 'success');
-          showDebug('登録成功！');
+          showMessage(`${schedules.length}日分の予定を登録しました！`, 'success');
+          
+          // 既存予定を更新
+          schedules.forEach(schedule => {
+            existingSchedules[schedule.date] = {
+              morning: schedule.morning,
+              afternoon: schedule.afternoon
+            };
+          });
+          
           setTimeout(() => {
             liff.closeWindow();
           }, 1500);
@@ -397,9 +632,9 @@
       } catch (error) {
         console.error('登録エラー:', error);
         showMessage('登録に失敗しました: ' + error.message, 'error');
-        showDebug('ERROR: ' + error.toString());
+      } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = '登録する';
+        submitBtn.textContent = '一括登録';
       }
     }
     
