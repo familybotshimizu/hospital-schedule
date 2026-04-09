@@ -16,7 +16,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #f5f5f5;
       padding: 20px;
-      padding-bottom: 100px;
+      padding-bottom: 120px;
     }
     
     .container {
@@ -76,16 +76,24 @@
     }
     
     .calendar-row {
-      display: grid;
-      grid-template-columns: 80px repeat(2, 1fr);
-      gap: 8px;
       padding: 12px 8px;
       border-bottom: 1px solid #f0f0f0;
-      align-items: center;
     }
     
     .calendar-row:last-child {
       border-bottom: none;
+    }
+    
+    .row-main {
+      display: grid;
+      grid-template-columns: 80px repeat(2, 1fr);
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .row-note {
+      padding-left: 88px;
     }
     
     .date-label {
@@ -143,6 +151,24 @@
       border-color: #ef5350;
     }
     
+    .note-input {
+      width: 100%;
+      padding: 8px;
+      font-size: 13px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      display: none;
+    }
+    
+    .note-input.show {
+      display: block;
+    }
+    
+    .note-input:focus {
+      outline: none;
+      border-color: #06c755;
+    }
+    
     .action-buttons {
       position: fixed;
       bottom: 0;
@@ -151,8 +177,40 @@
       background: white;
       padding: 16px 20px;
       box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .button-row {
       display: flex;
       gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .status-message {
+      text-align: center;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      display: none;
+      margin-bottom: 12px;
+    }
+    
+    .status-message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      display: block;
+    }
+    
+    .status-message.error {
+      background: #ffebee;
+      color: #c62828;
+      display: block;
+    }
+    
+    .status-message.processing {
+      background: #e3f2fd;
+      color: #1976d2;
+      display: block;
     }
     
     .btn {
@@ -257,6 +315,13 @@
       background: #ef5350;
       border-color: #ef5350;
     }
+    
+    .note-hint {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 <body>
@@ -272,16 +337,20 @@
       <div class="legend">
         <div class="legend-item">
           <div class="legend-color ok"></div>
-          <span>○ 対応できる</span>
+          <span>○ 対応できる！</span>
         </div>
         <div class="legend-item">
           <div class="legend-color maybe"></div>
-          <span>△ できれば避けたい</span>
+          <span>△ 対応できるかも！</span>
         </div>
         <div class="legend-item">
           <div class="legend-color ng"></div>
           <span>× 対応できない</span>
         </div>
+      </div>
+      
+      <div class="note-hint">
+        ○や△を選択すると備考欄が表示されます（任意）
       </div>
       
       <div class="month-selector">
@@ -302,8 +371,11 @@
       </div>
       
       <div class="action-buttons">
-        <button class="btn btn-secondary" id="clear-btn">クリア</button>
-        <button class="btn btn-primary" id="submit-btn">一括登録</button>
+        <div id="status-message" class="status-message"></div>
+        <div class="button-row">
+          <button class="btn btn-secondary" id="clear-btn">クリア</button>
+          <button class="btn btn-primary" id="submit-btn">一括登録</button>
+        </div>
       </div>
     </div>
   </div>
@@ -317,8 +389,8 @@
     
     let userId = null;
     let userName = null;
-    let scheduleData = {}; // { 'YYYY-MM-DD': { morning: '○', afternoon: '×' } }
-    let existingSchedules = {}; // GASから取得した既存予定
+    let scheduleData = {}; // { 'YYYY-MM-DD': { morning: '○', afternoon: '×', note: '15時以降可' } }
+    let existingSchedules = {};
     
     // ========================================
     // ユーティリティ関数
@@ -333,6 +405,19 @@
       if (type === 'success') {
         setTimeout(() => {
           messageEl.style.display = 'none';
+        }, 3000);
+      }
+    }
+    
+    // ステータスメッセージ表示
+    function showStatus(text, type) {
+      const statusEl = document.getElementById('status-message');
+      statusEl.textContent = text;
+      statusEl.className = `status-message ${type}`;
+      
+      if (type === 'success' || type === 'error') {
+        setTimeout(() => {
+          statusEl.style.display = 'none';
         }, 3000);
       }
     }
@@ -404,12 +489,14 @@
           result.schedules.forEach(schedule => {
             existingSchedules[schedule.date] = {
               morning: schedule.morning,
-              afternoon: schedule.afternoon
+              afternoon: schedule.afternoon,
+              note: schedule.note || ''
             };
             // 現在の選択状態にも反映
             scheduleData[schedule.date] = {
               morning: schedule.morning,
-              afternoon: schedule.afternoon
+              afternoon: schedule.afternoon,
+              note: schedule.note || ''
             };
           });
           
@@ -417,7 +504,6 @@
         }
       } catch (error) {
         console.error('既存予定の読み込みエラー:', error);
-        // エラーでも続行
       }
     }
     
@@ -459,21 +545,53 @@
         const row = document.createElement('div');
         row.className = 'calendar-row';
         
+        // メイン行
+        const mainRow = document.createElement('div');
+        mainRow.className = 'row-main';
+        
         // 日付ラベル
         const dateLabel = document.createElement('div');
         dateLabel.className = 'date-label';
         const weekday = getWeekday(date);
         const weekdayClass = getWeekdayClass(date);
         dateLabel.innerHTML = `${month}/${day} <span class="weekday ${weekdayClass}">(${weekday})</span>`;
-        row.appendChild(dateLabel);
+        mainRow.appendChild(dateLabel);
         
         // 午前ボタン
         const morningButtons = createPeriodButtons(dateStr, 'morning');
-        row.appendChild(morningButtons);
+        mainRow.appendChild(morningButtons);
         
         // 午後ボタン
         const afternoonButtons = createPeriodButtons(dateStr, 'afternoon');
-        row.appendChild(afternoonButtons);
+        mainRow.appendChild(afternoonButtons);
+        
+        row.appendChild(mainRow);
+        
+        // 備考行
+        const noteRow = document.createElement('div');
+        noteRow.className = 'row-note';
+        const noteInput = document.createElement('input');
+        noteInput.type = 'text';
+        noteInput.className = 'note-input';
+        noteInput.id = `note-${dateStr}`;
+        noteInput.placeholder = '備考（例：15時以降可）';
+        noteInput.maxLength = 30;
+        
+        // 既存の備考を反映
+        if (scheduleData[dateStr] && scheduleData[dateStr].note) {
+          noteInput.value = scheduleData[dateStr].note;
+          noteInput.classList.add('show');
+        }
+        
+        noteInput.addEventListener('input', function() {
+          if (!scheduleData[dateStr]) {
+            scheduleData[dateStr] = {};
+          }
+          scheduleData[dateStr].note = this.value;
+        });
+        
+        noteRow.appendChild(noteInput);
+        row.appendChild(noteRow);
         
         calendarBody.appendChild(row);
       }
@@ -537,6 +655,31 @@
         scheduleData[dateStr] = {};
       }
       scheduleData[dateStr][period] = value;
+      
+      // 備考欄の表示/非表示
+      updateNoteVisibility(dateStr);
+    }
+    
+    // ========================================
+    // 備考欄の表示制御
+    // ========================================
+    function updateNoteVisibility(dateStr) {
+      const noteInput = document.getElementById(`note-${dateStr}`);
+      if (!noteInput) return;
+      
+      const data = scheduleData[dateStr];
+      
+      // ○か△が選択されている場合のみ表示
+      if (data && (data.morning === '○' || data.morning === '△' || 
+                   data.afternoon === '○' || data.afternoon === '△')) {
+        noteInput.classList.add('show');
+      } else {
+        noteInput.classList.remove('show');
+        noteInput.value = '';
+        if (data) {
+          data.note = '';
+        }
+      }
     }
     
     // ========================================
@@ -551,7 +694,7 @@
         if (confirm('選択した予定をすべてクリアしますか？')) {
           scheduleData = {};
           generateCalendar();
-          showMessage('クリアしました', 'info');
+          showStatus('クリアしました', 'success');
         }
       });
       
@@ -559,95 +702,87 @@
       document.getElementById('submit-btn').addEventListener('click', submitAllSchedules);
     }
     
-		// ========================================
-		// 一括登録
-		// ========================================
-		async function submitAllSchedules() {
-		  const dates = Object.keys(scheduleData);
-		  
-		  if (dates.length === 0) {
-		    showMessage('予定が選択されていません', 'error');
-		    return;
-		  }
-		  
-		  // 午前・午後両方が選択されているかチェック
-		  const incompleteDates = dates.filter(date => {
-		    return !scheduleData[date].morning || !scheduleData[date].afternoon;
-		  });
-		  
-		  if (incompleteDates.length > 0) {
-		    showMessage('午前・午後の両方を選択してください', 'error');
-		    return;
-		  }
-		  
-		  const submitBtn = document.getElementById('submit-btn');
-		  submitBtn.disabled = true;
-		  submitBtn.textContent = '登録中...';
-		  
-		  try {
-		    // データを配列に変換
-		    const schedules = dates.map(date => ({
-		      date: date,
-		      morning: scheduleData[date].morning,
-		      afternoon: scheduleData[date].afternoon
-		    }));
-		    
-		    const requestData = {
-		      userId: userId,
-		      userName: userName,
-		      schedules: schedules,
-		      bulk: true
-		    };
-		    
-		    console.log('送信データ:', requestData);
-		    
-		    const response = await fetch(GAS_ENDPOINT, {
-		      method: 'POST',
-		      headers: {
-		        'Content-Type': 'text/plain',
-		      },
-		      body: JSON.stringify(requestData)
-		    });
-		    
-		    console.log('レスポンスステータス:', response.status);
-		    
-		    if (!response.ok) {
-		      throw new Error('HTTP Error: ' + response.status);
-		    }
-		    
-		    const responseText = await response.text();
-		    console.log('レスポンス内容:', responseText);
-		    
-		    const result = JSON.parse(responseText);
-		    console.log('JSONパース結果:', result);
-		    
-		    if (result.success) {
-		      showMessage(`${schedules.length}日分の予定を登録しました！`, 'success');
-		      
-		      // 既存予定を更新
-		      schedules.forEach(schedule => {
-		        existingSchedules[schedule.date] = {
-		          morning: schedule.morning,
-		          afternoon: schedule.afternoon
-		        };
-		      });
-		      
-		      setTimeout(() => {
-		        liff.closeWindow();
-		      }, 1500);
-		    } else {
-		      throw new Error(result.error || '登録に失敗しました');
-		    }
-		    
-		  } catch (error) {
-		    console.error('登録エラー:', error);
-		    showMessage('登録に失敗しました: ' + error.message, 'error');
-		  } finally {
-		    submitBtn.disabled = false;
-		    submitBtn.textContent = '一括登録';
-		  }
-		}
-
+    // ========================================
+    // 一括登録
+    // ========================================
+    async function submitAllSchedules() {
+      const dates = Object.keys(scheduleData);
+      
+      if (dates.length === 0) {
+        showStatus('予定が選択されていません', 'error');
+        return;
+      }
+      
+      // 午前・午後両方が選択されているかチェック
+      const incompleteDates = dates.filter(date => {
+        return !scheduleData[date].morning || !scheduleData[date].afternoon;
+      });
+      
+      if (incompleteDates.length > 0) {
+        showStatus('午前・午後の両方を選択してください', 'error');
+        return;
+      }
+      
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '登録中...';
+      showStatus('登録中...', 'processing');
+      
+      try {
+        // データを配列に変換
+        const schedules = dates.map(date => ({
+          date: date,
+          morning: scheduleData[date].morning,
+          afternoon: scheduleData[date].afternoon,
+          note: scheduleData[date].note || ''
+        }));
+        
+        const response = await fetch(GAS_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+          },
+          body: JSON.stringify({
+            userId: userId,
+            userName: userName,
+            schedules: schedules,
+            bulk: true
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('HTTP Error: ' + response.status);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          showStatus(`${schedules.length}日分の予定を登録しました！`, 'success');
+          
+          // 既存予定を更新
+          schedules.forEach(schedule => {
+            existingSchedules[schedule.date] = {
+              morning: schedule.morning,
+              afternoon: schedule.afternoon,
+              note: schedule.note
+            };
+          });
+          
+          setTimeout(() => {
+            liff.closeWindow();
+          }, 2000);
+        } else {
+          throw new Error(result.error || '登録に失敗しました');
+        }
+        
+      } catch (error) {
+        console.error('登録エラー:', error);
+        showStatus('登録に失敗しました', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '一括登録';
+      }
+    }
     
     // ========================================
     // 初期化実行
